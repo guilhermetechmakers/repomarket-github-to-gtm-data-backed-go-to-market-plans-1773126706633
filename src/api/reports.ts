@@ -7,7 +7,8 @@ import type {
 
 /** Normalize DB row + project to ReportItem (null-safe) */
 function toReportItem(row: Record<string, unknown>): ReportItem {
-  const project = row.projects as Record<string, unknown> | null | undefined
+  const raw = row.projects
+  const project = (Array.isArray(raw) ? raw[0] : raw) as Record<string, unknown> | null | undefined
   const repoOwner = project && typeof project.repo_owner === 'string' ? project.repo_owner : undefined
   const repoName = project && typeof project.repo_name === 'string' ? project.repo_name : undefined
   const evidence = row.evidence as unknown[] | null | undefined
