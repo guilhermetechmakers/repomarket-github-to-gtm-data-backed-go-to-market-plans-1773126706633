@@ -19,6 +19,7 @@ import Privacy from '@/pages/Privacy'
 import Terms from '@/pages/Terms'
 import Settings from '@/pages/Settings'
 import Audit from '@/pages/Audit'
+import SearchReports from '@/pages/SearchReports'
 import NotFound from '@/pages/NotFound'
 
 const queryClient = new QueryClient({
@@ -54,6 +55,7 @@ function App() {
           <Route path="/terms" element={<Terms />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/admin/audit" element={<Audit />} />
+          <Route path="/reports" element={<SearchReports />} />
           <Route path="/cookies" element={<Navigate to="/privacy" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
