@@ -4,8 +4,10 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 const navLinks = [
+  { to: '/dashboard', label: 'Dashboard' },
   { to: '/pricing', label: 'Pricing' },
   { to: '/help', label: 'Help' },
+  { to: '/settings', label: 'Settings' },
 ]
 
 interface NavbarProps {

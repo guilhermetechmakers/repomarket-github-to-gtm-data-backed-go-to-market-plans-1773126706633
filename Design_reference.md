@@ -326,250 +326,40 @@ All dashboard pages should be nested inside the dashboard layout, not separate r
 
 ## User Design Requirements
 
-# RepoMarket — Development Blueprint
+- Follow the Visual Style section provided (color palette, typography, spacing, and card design).
+- Primary CTAs aligned with dark pill styling (#111827) for consistency.
+- Use teal accents (#21C7A7) for highlights and actionable elements.
+- Ensure accessibility: semantic HTML, ARIA labels, keyboard navigability, and high-contrast text where needed.
 
-## Project Concept
-RepoMarket is a web application that converts a GitHub repository into an evidence-backed go-to-market (GTM) strategy. Purpose: enable founders, early product teams, consultants, and investors to derive product intent, maturity, target users, competitors, pricing patterns, messaging angles, and prioritized next steps directly from repository signals combined with live market research. Vision: provide a fast, code-first, trustworthy "mini-consultant" that synthesizes repository intelligence (code, README, manifests, APIs) with live market evidence (Perplexity) and structured LLM interpretation (Anthropic) to produce exportable GTM reports. Built on a lean stack: Supabase (auth, DB, storage, serverless), GitHub OAuth & content APIs, Anthropic for interpretation, Perplexity for research, Stripe for billing, SendGrid for transactional email.
+Visual Style and Components
+- Card components with rounded corners (14–18px), subtle borders (#E6E9EE), and shadows (0 6px 18px rgba(16,24,40,0.06)).
+- Interactive states: hover lifts and elevated borders, smooth transitions (150–220ms).
+- Data Visualization: minimalist, teal gradient charts for analytics within cards; subdued gray axes and grid lines.
+- Navigation: top bar with logo, muted navigation links, and a primary action pill on the right.
 
-AI app description: ingest repo snapshots, run structured Anthropic prompts to extract product context and maturity, run Perplexity queries to gather evidence and citations, synthesize deterministic JSON report schema, enable inline editing/versioning, and export to PDF/Markdown with access controls.
+Connected Pages
+- page_core_006 (Settings & Preferences)
+- page_core_011 (Repository Selection / Connect GitHub)
+- page_admin_018 (Admin/Audit & Compliance)
 
-## Problem Statement
-- Core problems:
-  - Founders lack rapid, evidence-based GTM guidance tied to their actual product codebase.
-  - Existing GTM advice is generic, questionnaire-driven, or disconnected from technical signals.
-  - Manual competitor research and pricing discovery is time-consuming and error-prone.
-- Who experiences these problems:
-  - Solo founders, early-stage startups, technical PMs, product consultants, accelerators/investors.
-- Why these problems matter:
-  - Wrong or generic GTM choices waste time, budget, and slow product-market fit discovery.
-  - Founders need high-confidence, actionable recommendations grounded in product reality and market signals.
-- Current state/gaps without this solution:
-  - No simple tool converts repository signals into a structured GTM plan with live citations.
-  - Research and synthesis is manual or requires expensive consulting.
-  - Lack of reproducible, auditable evidence linking claims to sources increases risk of misinformation.
+Technology Stack Alignment
+- Frontend: React (with hooks), TypeScript, and the app’s design system; ensure all array/data manipulations are null-safe.
+- Backend: Supabase for auth, Postgres, and storage; serverless functions for ingestion, scrub, and purge workflows.
+- Integrations: GitHub OAuth for repo ingestion; Anthropic for interpretation/insights (binding logic to ingestion results); Perplexity for external market research pointers integrated into final outputs.
 
-## Solution
-- How it addresses problems:
-  - Leverages GitHub repo signals to infer product purpose, users, flows, and maturity.
-  - Uses Anthropic LLM to extract structured product understanding (JSON schema) from code and documentation.
-  - Uses Perplexity to gather live market evidence: competitors, pricing, reviews, category language, and citations.
-  - Synthesizes findings into a prioritized GTM report with confidence scores, evidence links, and actionable next steps.
-- Approach and methodology:
-  - Secure GitHub OAuth → repo snapshot (selective or archive) → sanitization & storage in Supabase → chunking & summarization → Anthropic structured prompts → parallel Perplexity queries → deterministic synthesis engine merges structured product data + evidence into report JSON → store, present, edit, export.
-  - Asynchronous job queue for ingestion/analysis, caching and retries, and rate-limit handling for external APIs.
-- Key differentiators:
-  - Code-first insights (not questionnaires), evidence-backed claims (Perplexity citations), deterministic synthesis (JSON schema), exportable consultant-style reports, lean stack implementation.
-- Value creation:
-  - Rapid, actionable GTM outputs (<2 min target for typical repos), increased confidence via evidence links, reproducible reports for investor/partner review, frictionless onboarding from repo to strategy.
+Error Handling and Observability
+- Centralized error boundaries and user-friendly error messages.
+- Telemetry: track ingestion events, scrub counts, purge jobs, and policy changes; integrate with existing observability stack.
+- Retry strategies for transient failures in ingestion and purge workflows.
 
-## Requirements
+Documentation and Developer Handoff
+- API contracts with request/response schemas.
+- Database migration plan for new tables (RetentionPolicies, PurgeJobs, SecretsAudit, AuditLogs, etc.).
+- Clear coding standards and runtime safety patterns to ensure future changes remain compliant with the safety rules.
 
-### 1. Pages (UI Screens)
-- Landing Page (Public marketing)
-  - Purpose: convert visitors into signups; explain value proposition and CTAs.
-  - Key sections: hero (headline, subline, primary CTA "Get started / Connect GitHub", secondary CTA "See demo report"), 3–4 feature cards, 4-step "How it works" flow, pricing teaser, testimonials/logos, footer.
-  - Contribution: educates target users rapidly and drives activation.
-- Login / Signup Page
-  - Purpose: account access via Supabase auth.
-  - Key sections: email/password form (validation, strength meter), GitHub OAuth button, optional Google OAuth, links (forgot password, TOS, Privacy).
-  - Contribution: frictionless onboarding and secure auth.
-- Email Verification Page
-  - Purpose: confirm user emails post-signup.
-  - Key sections: status messaging (pending, success, error), resend verification (rate-limited), CTA to dashboard when verified.
-- Password Reset Page
-  - Purpose: request and complete password reset.
-  - Key sections: request form, tokenized reset form, password rules & strength feedback.
-- Dashboard (Projects)
-  - Purpose: user landing for all repo analyses and actions.
-  - Key sections: top nav (logo, analyze repo CTA, search, account menu), project list/grid with cards (maturity score, snippet, last-run), CTA panel to Analyze, activity feed, subscription status.
-  - Contribution: enables multi-project management and quick actions.
-- Repository Selection / Connect GitHub
-  - Purpose: authorize GitHub and choose repo + ingestion options.
-  - Key sections: GitHub OAuth connect state, repo browser + filters (org, language, private/public), ingestion options (branch, clone depth, include private, file filters), retention checkbox, start analysis CTA.
-  - Contribution: secure repo selection and configurable ingestion.
-- Analysis Progress
-  - Purpose: show real-time ingestion & analysis pipeline.
-  - Key sections: progress timeline (queued → fetching → parsing → LLM analysis → research → synthesize → complete), live logs (sanitized), ETA, cancel/retry buttons, skeleton preview partial results.
-  - Contribution: transparency into pipeline and error handling.
-- Analysis Results (Report Landing)
-  - Purpose: primary report overview and evidence presentation.
-  - Key sections: executive summary card (one-paragraph description, maturity), competitor snapshot (top 5 + snippets + links), ICP & personas, positioning & differentiators, pricing patterns, next-step roadmap, evidence panel with citations and repo snippets, actions (customize, export, schedule monitoring).
-  - Contribution: central actionable deliverable with evidence.
-- Report Viewer / Editor
-  - Purpose: edit, annotate, version report prior to export.
-  - Key sections: rich block editor mapped to report schema, evidence side-panel (Perplexity sources + repo snippets attachable), comments/annotations, version history and revert.
-  - Contribution: customization and auditability for final deliverable.
-- Report Export / Download
-  - Purpose: export reports with template & access controls.
-  - Key sections: format options (PDF, Markdown, DOCX optional), template choices (compact, consultant-style, investor one-pager), access controls (public link, password, expiry), export progress and delivery.
-  - Contribution: deliverable distribution and monetization gating.
-- Settings & Preferences
-  - Purpose: account management and data/privacy controls.
-  - Key sections: account details, connected GitHub accounts, retention/purge controls, API keys, notification preferences, plan management link.
-  - Contribution: trust, privacy control, and user account self-service.
-- User Profile
-  - Purpose: public/private user overview and recent public reports.
-  - Key sections: avatar, name, org, plan badge, recent public reports, manage team link.
-- Pricing Page
-  - Purpose: explain plans and convert to paid tiers.
-  - Key sections: tier cards (Free, Solo, Team, Agency), feature comparison, quotas, FAQ, CTA.
-- Checkout / Payment Page
-  - Purpose: collect payment via Stripe and complete purchase.
-  - Key sections: order summary, card input (Stripe Elements), promo code, legal consent, success/failure messaging.
-- Billing & Order History
-  - Purpose: invoices and subscription management.
-  - Key sections: subscription summary, invoice list (download), payment methods (add/remove), change plan/cancel.
-- Help & About
-  - Purpose: docs, onboarding guides, support.
-  - Key sections: getting started guide, FAQ, contact form, release notes/roadmap.
-- Admin Dashboard
-  - Purpose: internal monitoring and user management.
-  - Key sections: MAU/new signups, active analyses, queue health, API error rates, quick actions (impersonate, re-run).
-- Admin — User Management
-  - Purpose: manage users, credits, and purge.
-  - Key sections: user list & filters, user detail panel (repos, invoices), actions (change plan, purge data).
-- Privacy Policy, Terms of Service, Cookie Policy
-  - Purpose: legal & compliance.
-  - Key sections: full policy texts and controls for cookie consent.
-- 404 & 500 Error Pages
-  - Purpose: friendly error handling and diagnostics.
-  - Key sections: guidance, search, contact support, "Report this issue" prefilled button.
-- Operation Status / Loading Success (UX primitives)
-  - Purpose: generic success/loading feedback across app.
-  - Key sections: animated icons, short messages, CTAs.
+---
 
-### 2. Features
-- User Authentication & Session Management
-  - Implementation: Supabase Auth for email/password + GitHub OAuth; httpOnly cookies for session tokens; email verification via SendGrid; password reset tokens; session expiration policies; session audit logs; rate-limit flows.
-  - Contribution: secure access and onboarding.
-- GitHub Integration & Repo Ingestion
-  - Implementation: GitHub OAuth minimal scopes (repo:read), server-side ingestion worker (background job), use Contents API or archive downloads, selective fetch of README, package manifests, OpenAPI specs, Dockerfiles, source file heuristics; sanitize secrets and exclude large binaries; store sanitized snapshots in Supabase Storage with retention metadata; optional webhooks to trigger re-analysis.
-  - Contribution: code-first signal extraction.
-- Repository Understanding (Anthropic)
-  - Implementation: chunk & summarize repo text; structured prompt templates to output JSON (product_description, problems_solved, user_personas, core_flows, maturity_score, code_evidence_refs, confidence); post-validate JSON and attach confidence; caching and retry logic; rate-limit backoff.
-  - Contribution: structured product insight extraction.
-- Market Research (Perplexity)
-  - Implementation: query templates seeded with product summary and intents (competitors, pricing, reviews, category language); parallel queries with caching and rate-limit management; normalize results (url, snippet, timestamp, relevance); store evidence artifacts and relevance scores.
-  - Contribution: live, citable market evidence.
-- GTM Synthesis & Report Generation
-  - Implementation: deterministic synthesis pipeline that merges Anthropic JSON + Perplexity evidence into canonical report schema (report_id, repo_ref, exec_summary, competitors[], ICP[], positioning[], pricing[], messaging[], next_steps[], evidence[]); confidence scoring algorithm; generate preview HTML; store versioned reports.
-  - Contribution: single source of truth report output.
-- Report Customization & Editor
-  - Implementation: block-level rich editor mapped to report JSON; evidence side-panel to attach sources to paragraphs; autosave drafts; versioning and compare/revert; role-based editing.
-  - Contribution: customizable, collaborative final reports.
-- Report Export & Delivery
-  - Implementation: server-side PDF/Markdown renderer (headless Chromium or templated renderer), enforce export quotas per plan, generate public share links with optional password and expiry, email delivery via SendGrid, audit logs of exports.
-  - Contribution: distribution and monetization.
-- Notifications & Emails
-  - Implementation: SendGrid templated emails for verification, report ready, billing; in-app notifications table in Supabase; webhooks/background triggers; retry/queue and rate limits.
-  - Contribution: user engagement and transactional flows.
-- Billing & Subscription Management
-  - Implementation: Stripe integration for subscriptions, webhooks for invoice/payment events, metering for research credits & export quotas in Supabase, admin overrides for credits, receipts storage.
-  - Contribution: monetization and plan enforcement.
-- Admin Tools & Analytics
-  - Implementation: role-based admin endpoints, aggregated metrics dashboard (Supabase queries), queue/job controls, impersonation audit logs, manual re-run.
-  - Contribution: operational control and monitoring.
-- Security & Data Privacy Controls
-  - Implementation: encryption at rest for storage; secret scanning & redaction during ingestion; user-initiated purge endpoint; retention policies configurable per repo; least-privilege roles and Supabase RLS policies.
-  - Contribution: trust, compliance, and privacy.
-- Search & Filter Reports
-  - Implementation: full-text search (Postgres tsvector or Meilisearch) for reports and repos; filters (status, date, maturity, language); debounced queries and pagination.
-  - Contribution: manage scale and discoverability.
-
-### 3. User Journeys
-- Anonymous Visitor → Signup → Analyze Demo
-  1. Visitor sees Landing Page → clicks "See demo report".
-  2. Opens demo report (seeded sample) without auth to evaluate product.
-  3. Click "Get started" → Signup page → create account via GitHub OAuth or email.
-  4. If email signup: verify email via SendGrid link → redirected to Dashboard.
-- New User → Connect GitHub → Run Analysis
-  1. User on Dashboard clicks "Analyze a repository".
-  2. Connect GitHub (OAuth) if not connected.
-  3. Repo browser lists accessible repos; user selects repo and configures ingestion options (branch, depth, file filters).
-  4. Start analysis → server enqueues ingestion job; UI shows Analysis Progress timeline.
-  5. Ingestion fetches repo snapshot, sanitizes, stores snapshot.
-  6. Repo text chunking + Anthropic prompts produce structured product JSON.
-  7. In parallel, Perplexity queries run to gather competitors & evidence.
-  8. Synthesis merges results into report JSON → notification/email sent when ready.
-  9. User views Analysis Results page: reads exec summary, inspects evidence panel, and reviews next steps.
-- User → Customize & Export
-  1. From Report Landing, user opens Report Viewer/Editor.
-  2. Edits messaging, attaches evidence snippets, comments inline, saves draft.
-  3. Click Export → choose template & format → system checks export quota/plan.
-  4. If allowed, server renders PDF/Markdown; progress shown; file delivered and optionally emailed.
-- Team / Admin Flow
-  1. Team admin purchases Team plan → invites members.
-  2. Team members see shared projects in Dashboard and can run analyses with shared credits.
-  3. Admin uses Admin Dashboard to monitor quotas, re-run jobs, or purge user data on request.
-- Error & Retry Flow (Ingestion or API failure)
-  1. Analysis Progress shows failure step and sanitized error log.
-  2. User can retry or cancel; system implements exponential backoff and admin can re-run from admin tools.
-  3. If Anthropic/Perplexity rate-limited, partial results exposed with confidence markers and "re-run research" CTA.
-- Data Purge and Privacy Flow
-  1. User navigates to Settings → Data & Privacy → selects repo snapshot → requests purge.
-  2. System enqueues deletion job, removes files from storage, wipes analysis records per audit trail, and notifies user when completed.
-
-## UI Guide
-(Design tokens, components, and behavior summarized for implementation.)
-
-### Visual Style
-Follow the provided color palette, typography, spacing, and component behavior exactly. Use Inter or Poppins as primary font. Maintain centered hero with max content width 980–1100px. Use 8/16/24 spacing scale and internal card padding 22–28px.
-
-### Color Palette:
-- Primary background: #F6F7F9
-- Content surface / cards: #FFFFFF
-- Primary text: #0F1724
-- Body text: #6B7280
-- Border / divider: #E6E9EE
-- Accent: #21C7A7
-- Accent light: #E7FAF6
-- Primary button (dark pill): #111827
-- Analytics gradient: #2FD7BC → #14B9A0
-- Shadow: rgba(16,24,40,0.06)
-
-### Typography & Layout:
-- H1: 48–64px, 700, #0F1724
-- H2: 24–32px, 600, #0F1724
-- Body: 16px, 400, #6B7280
-- Captions: 12–14px, #9CA3AF
-- Micro labels/pills: 12px, 600, small-caps
-- Grid: hero single-column, feature grid 3 cards desktop → 1 column mobile.
-
-### Key Design Elements
-- Card design: rounded 14–18px, 1px border #E6E9EE, shadow 0 6px 18px rgba(16,24,40,0.06), hover translateY(-4px).
-- Navigation: white bar, left logo, center links #6B7280, right primary pill CTA #111827.
-- Data viz: minimal charts inside cards, rounded bar caps, teal gradient for positive metrics.
-- Buttons: primary dark pill #111827; secondary ghost border #E6E9EE; accent teal #21C7A7.
-- Forms: rounded inputs 8–10px radius, 1px border #E6E9EE, focus ring rgba(33,199,167,0.18).
-- Micro-interactions: subtle transitions 150–220ms.
-
-### Design Philosophy
-- Clarity-first, evidence-focused, developer-friendly, actionable & efficient. Emphasize citations, confidence scores, and minimal decorative elements. Ensure components are reusable and accessible.
-
-Implementation Notes: apply design tokens globally; ensure color contrast meets accessibility; build design system components (Button, Card, Modal, Editor blocks, Evidence Panel, Progress Timeline, Repo Browser, Chart primitives).
-
-## Instructions to AI Development Tool
-1. Refer to Project Concept, Problem Statement, and Solution for the "why" behind features.
-2. Ensure all pages and features align with solving identified problems.
-3. Verify implementations against the requirements before completing each task.
-4. Adhere strictly to the UI Guide for visual elements, spacing, and interactions.
-5. Maintain consistent approach across the stack: Supabase for auth/DB/storage, GitHub for ingestion, Anthropic for structured interpretation, Perplexity for evidence, Stripe for billing, SendGrid for email.
-6. Implement robust error handling, caching, retry/backoff strategies, and rate-limit-aware queuing for external APIs.
-7. Provide unit/integration tests for ingestion, LLM prompt pipelines, synthesis, and export rendering; include e2e tests for key user flows (signup, connect GitHub, analyze, edit, export).
-8. Ensure security controls: secret scrubbing, encryption at rest, RLS policies, least-privilege service keys, and audit logs for admin actions.
-9. Produce seed/demo data (sample repos and reports) and report templates (compact one-pager, consultant-style, investor summary) for onboarding and marketing.
-10. Deliver developer-friendly docs (API, data schema, prompt templates, deployment steps) and deployment automation (IaC for Supabase & server components, CI workflows, environment secrets management).
-
-PROJECT CONTEXT (concise)
-- Project: RepoMarket — GitHub-to-GTM: convert repo signals + live market research → evidence-backed GTM report.
-- Stack: Supabase (auth, DB, storage, serverless), GitHub API, Anthropic (LLM), Perplexity (research), Stripe, SendGrid.
-- Target users: founders, early-stage startups, product consultants, investors.
-- Core flows: signup → connect GitHub → select repo → ingest & analyze → Perplexity research → synthesize GTM report → customize & export.
-- Success metrics: activation (repo connect %), conversion (free→paid), time-to-insight (<2 min target), report quality (NPS), retention.
-- Scope: logo/icon set, onboarding illustrations, report templates (PDF/Markdown), sample reports/demo data, design system, full page & feature set enumerated above.
-- Key challenges & mitigations: LLM hallucinations (structured prompts + citations), security/privacy (sanitization + retention controls), API rate limits (caching + queues), export quotas & billing controls.
-
-End of blueprint.
+This prompt provides a complete, actionable blueprint for building Security & Data Privacy Controls within RepoMarket, aligned with Supabase-backed architecture, frontend and backend components, and rigorous runtime safety practices. It covers data models, APIs, UX flows, security requirements, and acceptance criteria to guide AI-assisted development end-to-end.
 
 ## Implementation Notes
 
