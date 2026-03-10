@@ -43,7 +43,7 @@ export function ReportSummaryCard({
   return (
     <Card
       className={cn(
-        'rounded-[14px] border border-border bg-card shadow-card transition-all duration-[200ms] hover:shadow-lg hover:-translate-y-0.5',
+        'rounded-[14px] border border-border bg-card shadow-card transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5',
         className
       )}
     >

@@ -66,7 +66,7 @@ export const reportsApi = {
     if (statusList.length > 0) query = query.in('status', statusList)
     if (params.language != null && params.language !== '')
       query = query.eq('language', params.language)
-    if (params.maturity != null && params.maturity !== '')
+    if (params.maturity)
       query = query.eq('maturity', params.maturity)
     if (params.date_from) query = query.gte('created_at', params.date_from)
     if (params.date_to) query = query.lte('created_at', params.date_to)

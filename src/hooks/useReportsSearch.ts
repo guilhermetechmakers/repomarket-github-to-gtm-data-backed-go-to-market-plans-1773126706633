@@ -74,16 +74,6 @@ export interface UseReportsSearchFilters {
   tags: string[]
 }
 
-const defaultFilters: UseReportsSearchFilters = {
-  q: '',
-  status: [],
-  language: '',
-  maturity: '',
-  date_from: '',
-  date_to: '',
-  tags: [],
-}
-
 export function useReportsSearch() {
   const [searchParams, setSearchParams] = useSearchParams()
 

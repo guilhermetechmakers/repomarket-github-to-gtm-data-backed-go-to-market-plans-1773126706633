@@ -22,12 +22,20 @@ export default function Dashboard() {
             <h1 className="text-2xl font-semibold text-foreground">
               Projects
             </h1>
-            <Button asChild>
-              <Link to="/connect">
-                <Plus className="mr-2 h-4 w-4" />
-                Analyze a repository
-              </Link>
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" asChild>
+                <Link to="/reports">
+                  <FileSearch className="mr-2 h-4 w-4" />
+                  Search reports
+                </Link>
+              </Button>
+              <Button asChild>
+                <Link to="/connect">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Analyze a repository
+                </Link>
+              </Button>
+            </div>
           </div>
 
           <div className="mb-6">
