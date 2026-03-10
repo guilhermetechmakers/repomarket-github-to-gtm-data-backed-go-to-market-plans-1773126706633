@@ -37,45 +37,13 @@ function toReportItem(row: Record<string, unknown>): ReportItem {
   }
 }
 
-/** Build filter query on reports; returns query with filters applied (no pagination) */
-function applyFilters(
-  query: ReturnType<typeof supabase.from<'reports'>>['select'],
-  params: ReportSearchParams
-) {
-  let q = query
-
-  if (params.status?.length) {
-    q = q.in('status', params.status) as typeof q
-  }
-  if (params.language != null && params.language !== '') {
-    q = q.eq('language', params.language) as typeof q
-  }
-  if (params.maturity != null && params.maturity !== '') {
-    q = q.eq('maturity', params.maturity) as typeof q
-  }
-  if (params.date_from) {
-    q = q.gte('created_at', params.date_from) as typeof q
-  }
-  if (params.date_to) {
-    q = q.lte('created_at', params.date_to) as typeof q
-  }
-  if (Array.isArray(params.tags) && params.tags.length > 0) {
-    q = q.overlaps('tags', params.tags) as typeof q
-  }
-
-  return q
+/** Full-text-like search: ilike on title, summary, content, exec_summary. Avoid commas in term so .or() is not broken. */
+function buildSearchTerm(q: string): string {
+  const t = String(q ?? '').trim().replace(/,/g, ' ')
+  return t ? `%${t}%` : ''
 }
 
-/** Full-text-like search: ilike on title, summary, content, exec_summary */
-function applySearch(
-  query: ReturnType<typeof supabase.from<'reports'>>['select'],
-  searchTerm: string
-) {
-  const term = `%${searchTerm.trim().replace(/%/g, '\\%')}%`
-  return query.or(
-    `title.ilike.${term},summary.ilike.${term},content.ilike.${term},exec_summary.ilike.${term}`
-  )
-}
+const REPORTS_SELECT = '*, projects(repo_owner, repo_name)'
 
 export const reportsApi = {
   /**
@@ -90,19 +58,25 @@ export const reportsApi = {
 
     let query = supabase
       .from('reports')
-      .select('*, projects!reports_project_id_fkey(repo_owner, repo_name)', { count: 'exact' })
+      .select(REPORTS_SELECT, { count: 'exact' })
       .order('updated_at', { ascending: false })
 
-    const safeParams: ReportSearchParams = {
-      ...params,
-      status: Array.isArray(params.status) ? params.status : undefined,
-      tags: Array.isArray(params.tags) ? params.tags : undefined,
-    }
+    const statusList = Array.isArray(params.status) ? params.status : []
+    if (statusList.length > 0) query = query.in('status', statusList)
+    if (params.language != null && params.language !== '')
+      query = query.eq('language', params.language)
+    if (params.maturity != null && params.maturity !== '')
+      query = query.eq('maturity', params.maturity)
+    if (params.date_from) query = query.gte('created_at', params.date_from)
+    if (params.date_to) query = query.lte('created_at', params.date_to)
+    const tagsList = Array.isArray(params.tags) ? params.tags : []
+    if (tagsList.length > 0) query = query.overlaps('tags', tagsList)
 
-    query = applyFilters(query, safeParams) as typeof query
-
-    if (params.q != null && String(params.q).trim() !== '') {
-      query = applySearch(query, String(params.q)) as typeof query
+    const searchTerm = buildSearchTerm(params.q ?? '')
+    if (searchTerm) {
+      query = query.or(
+        `title.ilike.${searchTerm},summary.ilike.${searchTerm},content.ilike.${searchTerm},exec_summary.ilike.${searchTerm}`
+      )
     }
 
     const { data, error, count } = await query.range(from, to)
@@ -122,7 +96,7 @@ export const reportsApi = {
   async getById(id: string): Promise<ReportItem | null> {
     const { data, error } = await supabase
       .from('reports')
-      .select('*, projects!reports_project_id_fkey(repo_owner, repo_name)')
+      .select(REPORTS_SELECT)
       .eq('id', id)
       .single()
 
@@ -146,7 +120,7 @@ export const reportsApi = {
         exec_summary: payload.summary ?? payload.title ?? null,
         status: payload.status ?? 'Draft',
       })
-      .select('*, projects!reports_project_id_fkey(repo_owner, repo_name)')
+      .select(REPORTS_SELECT)
       .single()
 
     if (error) throw new Error(error.message ?? 'Failed to create report')
@@ -170,7 +144,7 @@ export const reportsApi = {
       .from('reports')
       .update(row)
       .eq('id', id)
-      .select('*, projects!reports_project_id_fkey(repo_owner, repo_name)')
+      .select(REPORTS_SELECT)
       .single()
 
     if (error) throw new Error(error.message ?? 'Failed to update report')
